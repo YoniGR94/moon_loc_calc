@@ -576,8 +576,15 @@
             statusElem.className = "horizon-status status-down";
         }
 
-        document.getElementById('res-rise').innerText = formatLocalTime(times.rise, loc.timeZone);
-        document.getElementById('res-set').innerText = formatLocalTime(times.set, loc.timeZone);
+// בדיקה אם הירח זורח/שוקע מחוץ לגבולות היום הנוכחי
+        let riseText = times.rise ? formatLocalTime(times.rise, loc.timeZone) : 
+                       (getMoonPosition(utcStartMs, loc.lat, loc.lng).altitude > 0 ? "00:00-" : "23:59+");
+                       
+        let setText = times.set ? formatLocalTime(times.set, loc.timeZone) : 
+                      (getMoonPosition(utcEndMs, loc.lat, loc.lng).altitude > 0 ? "23:59+" : "00:00-");
+
+        document.getElementById('res-rise').innerText = riseText;
+        document.getElementById('res-set').innerText = setText;
         
         document.getElementById('result').style.display = 'block';
     }
