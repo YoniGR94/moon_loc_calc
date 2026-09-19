@@ -2,6 +2,9 @@
 
 A lightweight, web-based astronomical calculator that determines the exact position, phase, and rise/set times of the moon for a specific date, time, and location. Built completely with HTML, CSS, and vanilla JavaScript—no external dependencies required.
 
+Try here:
+[🌙 Moon Position Calculator](https://yonigr94.github.io/moon_loc_calc/)
+
 ## ✨ Features
 
 * **Real-Time Astronomical Data**: Accurately calculates the moon's altitude (height above the horizon) and azimuth (compass direction).
