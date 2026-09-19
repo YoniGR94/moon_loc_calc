@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">מחשבון מיקום הירח</title>
+    <style>
+        /* === משתני צבע ועיצוב בסיסי === */
+        :root {
+            --royal-blue: #0A1B3F;
+            --banana-yellow: #FFE135;
+            --banana-light: #FFF099;
+            --white: #FFFFFF;
+            --grey-light: #A0ABC0;
+        }
+
+        body {
+            background-color: var(--royal-blue);
+            color: var(--white);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 450px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 225, 53, 0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .header svg {
+            width: 50px;
+            height: 50px;
+            fill: var(--banana-yellow);
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            color: var(--banana-yellow);
+            font-size: 22px;
+            margin: 0;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .lang-select {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--banana-light);
+            border: 1px solid var(--banana-yellow);
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* === טפסים וכפתורים === */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .time-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .time-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--banana-light);
+            font-size: 14px;
+        }
+
+        input[type="date"], input[type="time"], select.main-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--banana-yellow);
+            background-color: rgba(10, 27, 63, 0.8);
+            color: var(--white);
+            font-size: 16px;
+            box-sizing: border-box;
+            color-scheme: dark;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .timezone-info {
+            font-size: 13px;
+            color: var(--grey-light);
+            margin-top: 6px;
+            text-align: left;
+            direction: ltr;
+        }
+
+        button.submit-btn {
+            width: 100%;
+            background-color: var(--banana-yellow);
+            color: var(--royal-blue);
+            border: none;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn-now {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--banana-yellow);
+            border: 1px solid var(--banana-yellow);
+            padding: 12px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* === אזור התוצאות === */
+        #result {
+            margin-top: 30px;
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .horizon-status {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+        }
+
+        .status-up { color: var(--banana-yellow); }
+        .status-down { color: var(--grey-light); }
+
+        .big-results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* שלוש עמודות כעת */
+            gap: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-box {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 15px 5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .result-box .main-val {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--white);
+            margin-top: 5px;
+        }
+
+        .result-box .sub-val {
+            font-size: 13px;
+            color: var(--banana-light);
+            margin-top: 4px;
+            min-height: 18px;
+        }
+
+        /* תצוגת ירח SVG */
+        .moon-visual {
+            margin: 8px 0;
+            display: flex;
+            justify-content: center;
+        }
+        #moon-svg {
+            filter: drop-shadow(0 0 6px rgba(255, 225, 53, 0.3));
+        }
+
+        .rise-set-row {
+            display: flex;
+            justify-content: space-around;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 15px;
+        }
+
+        .rise-set-row span {
+            color: var(--banana-yellow);
+            font-weight: bold;
+        }
+
+        /* התאמה למסכים קטנים מאוד */
+        @media (max-width: 380px) {
+            .big-results-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .phase-box {
+                grid-column: span 2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <select id="lang-selector" class="lang-select" onchange="changeLanguage()">
+            <option value="he">עברית</option>
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <div class="header">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+        </svg>
+        <h1 id="lbl-title">מיקום הירח</h1>
+    </div>
+
+    <form id="moonForm" onsubmit="calculateMoon(event)">
+        <div class="form-group">
+            <label id="lbl-date" for="date">תאריך:</label>
+            <input type="date" id="date" required>
+        </div>
+
+        <div class="time-row form-group">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label id="lbl-time" for="time">שעה:</label>
+                <input type="time" id="time" required>
+            </div>
+            <button type="button" class="btn-now" id="btn-now" onclick="setNow()">עכשיו</button>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-location" for="location">מיקום:</label>
+            <select id="location" class="main-select" onchange="updateTzInfo()">
+                <option value="telaviv" id="loc-tlv">תל אביב, ישראל</option>
+                <option value="cyprus" id="loc-cyp">ניקוסיה, קפריסין</option>
+                <option value="vienna" id="loc-vie">וינה, אוסטריה</option>
+                <option value="newyork" id="loc-ny">ניו יורק, ארה״ב</option>
+            </select>
+            <div id="tz-info" class="timezone-info"></div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="btn-calc">חשב מיקום</button>
+    </form>
+
+    <div id="result">
+        <div id="res-status" class="horizon-status"></div>
+        
+        <div class="big-results-grid">
+            <div class="result-box">
+                <label id="lbl-alt">גובה</label>
+                <div class="main-val" id="res-altitude"></div>
+            </div>
+            <div class="result-box">
+                <label id="lbl-az">אזימוט</label>
+                <div class="main-val" id="res-azimuth"></div>
+                <div class="sub-val" id="res-direction"></div>
+            </div>
+            <!-- הקובייה החדשה למצב הירח -->
+            <div class="result-box phase-box">
+                <label id="lbl-phase">מצב הירח</label>
+                <div class="moon-visual">
+                    <svg id="moon-svg" viewBox="0 0 100 100" width="40" height="40">
+                        <circle cx="50" cy="50" r="50" fill="#A0ABC0" /> 
+                        <path id="moon-lit-path" fill="#FFE135" d="" />
+                    </svg>
+                </div>
+                <div class="sub-val" id="res-phase-text"></div>
+            </div>
+        </div>
+
+        <div class="rise-set-row">
+            <div><span id="lbl-rise">זריחה</span> <span id="res-rise"></span></div>
+            <div><span id="lbl-set">שקיעה</span> <span id="res-set"></span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. הגדרות ונתונים ---
+    const locations = {
+        telaviv: { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" },
+        cyprus:  { lat: 35.1856, lng: 33.3823, timeZone: "Asia/Nicosia" },
+        vienna:  { lat: 48.2082, lng: 16.3738, timeZone: "Europe/Vienna" },
+        newyork: { lat: 40.7128, lng: -74.0060, timeZone: "America/New_York" }
+    };
+
+    // מילון שפות מעודכן
+    const i18n = {
+        he: {
+            title: "מיקום הירח", date: "תאריך:", time: "שעה:", now: "עכשיו", location: "מיקום:",
+            calc: "חשב מיקום", alt: "גובה", az: "אזימוט", rise: "זריחה", set: "שקיעה",
+            moonUp: "הירח מעל האופק", moonDown: "הירח מתחת לאופק", dirRtl: "rtl", phaseLbl: "מצב הירח",
+            locs: { tlv: "תל אביב, ישראל", cyp: "ניקוסיה, קפריסין", vie: "וינה, אוסטריה", ny: "ניו יורק, ארה״ב" },
+            compass: ["צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב"],
+            phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" }
+        },
+        en: {
+            title: "Moon Position", date: "Date:", time: "Time:", now: "Now", location: "Location:",
+            calc: "Calculate", alt: "Altitude", az: "Azimuth", rise: "Rise", set: "Set",
+            moonUp: "Moon is above horizon", moonDown: "Moon is below horizon", dirRtl: "ltr", phaseLbl: "Moon Phase",
+            locs: { tlv: "Tel Aviv, Israel", cyp: "Nicosia, Cyprus", vie: "Vienna, Austria", ny: "New York, USA" },
+            compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+            phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" }
+        },
+        ar: {
+            title: "موقع القمر", date: "التاريخ:", time: "الوقت:", now: "الآن", location: "الموقع:",
+            calc: "احسب الموقع", alt: "الارتفاع", az: "السمت", rise: "شروق", set: "غروب",
+            moonUp: "القمر فوق الأفق", moonDown: "القمر تحت الأفق", dirRtl: "rtl", phaseLbl: "طور القمر",
+            locs: { tlv: "تل أبيب، إسرائيل", cyp: "نيقوسيا، قبرص", vie: "فيينا، النمسا", ny: "نيويورك، أمريكا" },
+            compass: ["شمال", "شمال شرقي", "شرق", "جنوب شرقي", "جنوب", "جنوب غربي", "غرب", "شمال غربي"],
+            phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" }
+        }
+    };
+
+    let currentLang = 'he';
+
+    // --- 2. פונקציות ממשק ושפות ---
+    function changeLanguage() {
+        currentLang = document.getElementById('lang-selector').value;
+        const dict = i18n[currentLang];
+        
+        document.getElementById('html-root').dir = dict.dirRtl;
+        document.getElementById('html-root').lang = currentLang;
+        
+        document.getElementById('lbl-title').innerText = dict.title;
+        document.getElementById('page-title').innerText = dict.title;
+        document.getElementById('lbl-date').innerText = dict.date;
+        document.getElementById('lbl-time').innerText = dict.time;
+        document.getElementById('btn-now').innerText = dict.now;
+        document.getElementById('lbl-location').innerText = dict.location;
+        document.getElementById('btn-calc').innerText = dict.calc;
+        document.getElementById('lbl-alt').innerText = dict.alt;
+        document.getElementById('lbl-az').innerText = dict.az;
+        document.getElementById('lbl-rise').innerText = dict.rise;
+        document.getElementById('lbl-set').innerText = dict.set;
+        document.getElementById('lbl-phase').innerText = dict.phaseLbl;
+        
+        document.getElementById('loc-tlv').innerText = dict.locs.tlv;
+        document.getElementById('loc-cyp').innerText = dict.locs.cyp;
+        document.getElementById('loc-vie').innerText = dict.locs.vie;
+        document.getElementById('loc-ny').innerText = dict.locs.ny;
+
+        if (document.getElementById('result').style.display === 'block') {
+            document.getElementById('btn-calc').click();
+        }
+    }
+
+    // --- 3. אלגוריתמים אסטרונומיים ---
+    const PI = Math.PI, rad = PI / 180, deg = 180 / PI, e = rad * 23.4397;
+    function toDays(dateValue) { return dateValue / 86400000 - 10957.5; }
+    function rightAscension(l, b) { return Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l)); }
+    function declination(l, b) { return Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l)); }
+    function azimuthCoord(H, phi, dec) { return Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)); }
+    function altitudeCoord(H, phi, dec) { return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)); }
+    function siderealTime(d, lw) { return rad * (280.16 + 360.9856235 * d) - lw; }
+
+    function moonCoords(d) {
+        const L = rad * (218.316 + 13.176396 * d);
+        const M = rad * (134.963 + 13.064993 * d);
+        const F = rad * (93.272 + 13.229350 * d);
+        const l  = L + rad * 6.289 * Math.sin(M);
+        const b  = rad * 5.128 * Math.sin(F);
+        const dt = 385001 - 20905 * Math.cos(M); 
+        return { ra: rightAscension(l, b), dec: declination(l, b), dist: dt };
+    }
+
+    function getMoonPosition(dateValue, lat, lng) {
+        const lw = rad * -lng, phi = rad * lat, d = toDays(dateValue);
+        const c = moonCoords(d);
+        const H = siderealTime(d, lw) - c.ra;
+        let h = altitudeCoord(H, phi, c.dec);
+        h = h + rad * 0.017 / Math.tan(h + rad * rad * 10.3 / (h + rad * 5.10));
+        h = h - Math.asin(6371.0 / c.dist * Math.cos(h));
+        let az = azimuthCoord(H, phi, c.dec) + PI;
+        return { azimuth: (az * deg) % 360, altitude: h * deg };
+    }
+
+    function getMoonRiseSet(utcStartMs, utcEndMs, lat, lng) {
+        let rise = null, set = null;
+        const h0 = -0.583;
+        let prevAlt = getMoonPosition(utcStartMs, lat, lng).altitude;
+        for (let t = utcStartMs + 2 * 60000; t <= utcEndMs; t += 2 * 60000) {
+            const alt = getMoonPosition(t, lat, lng).altitude;
+            if (prevAlt < h0 && alt >= h0 && rise === null) rise = t;
+            if (prevAlt >= h0 && alt < h0 && set === null) set = t;
+            if (rise !== null && set !== null) break;
+            prevAlt = alt;
+        }
+        return { rise, set };
+    }
+
+    // --- חישוב וציור מצב הירח ---
+    function getMoonPhase(utcMs) {
+        const d = toDays(utcMs);
+        const newMoonEpoch = toDays(Date.UTC(2000, 0, 6, 14, 24, 0));
+        const lunation = 29.53058867;
+        let phase = ((d - newMoonEpoch) % lunation) / lunation;
+        if (phase < 0) phase += 1;
+        return phase; 
+    }
+
+    function drawMoonPhaseVisual(phase) {
+        const pDict = i18n[currentLang].phases;
+        let phaseText = "";
+
+        if (phase < 0.03 || phase > 0.97) phaseText = pDict.new;
+        else if (phase < 0.22) phaseText = pDict.waxCres;
+        else if (phase < 0.28) phaseText = pDict.firstQuar;
+        else if (phase < 0.47) phaseText = pDict.waxGib;
+        else if (phase < 0.53) phaseText = pDict.full;
+        else if (phase < 0.72) phaseText = pDict.wanGib;
+        else if (phase < 0.78) phaseText = pDict.lastQuar;
+        else phaseText = pDict.wanCres;
+
+        document.getElementById('res-phase-text').innerText = phaseText;
+
+        const path = document.getElementById('moon-lit-path');
+        let d = ""; 
+        
+        if (phase <= 0.5) {
+            const sweep = phase <= 0.25 ? 0 : 1; 
+            const rx = Math.abs(50 - (phase * 200));
+            d = `M 50 0 A 50 50 0 0 1 50 100 A ${rx} 50 0 0 ${sweep} 50 0 Z`;
+        } else {
+            const p = phase - 0.5;
+            const sweep = p <= 0.25 ? 1 : 0;
+            const rx = Math.abs(50 - (p * 200));
+            d = `M 50 0 A 50 50 0 0 0 50 100 A ${rx} 50 0 0 ${sweep} 50 0 Z`;
+        }
+        
+        path.setAttribute('d', d);
+    }
+
+    function getCompassDirection(azimuth) {
+        const directions = i18n[currentLang].compass;
+        const index = Math.round(((azimuth %= 360) < 0 ? azimuth + 360 : azimuth) / 45) % 8;
+        return directions[index];
+    }
+
+    // --- 4. אזורי זמן וזמנים מקומיים ---
+    function getTimeZoneParts(utcMs, timeZone) {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+        }).formatToParts(new Date(utcMs));
+        return Object.fromEntries(parts.filter(({ type }) => type !== 'literal').map(({ type, value }) => [type, Number(value)]));
+    }
+
+    function getTimeZoneOffsetMs(utcMs, timeZone) {
+        const parts = getTimeZoneParts(utcMs, timeZone);
+        const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+        return asUtc - Math.floor(utcMs / 1000) * 1000;
+    }
+
+    function localDateTimeToUtcMs(dateValue, timeValue, timeZone) {
+        const [year, month, day] = dateValue.split('-').map(Number);
+        const [hours, minutes] = timeValue.split(':').map(Number);
+        const localMs = Date.UTC(year, month - 1, day, hours, minutes);
+        let utcMs = localMs - getTimeZoneOffsetMs(localMs, timeZone);
+        utcMs = localMs - getTimeZoneOffsetMs(utcMs, timeZone);
+        return utcMs;
+    }
+
+    function formatLocalTime(utcMs, timeZone) {
+        if (utcMs === null) return "--:--";
+        return new Intl.DateTimeFormat('he-IL', {
+            timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+        }).format(new Date(utcMs));
+    }
+
+    function updateTzInfo() {
+        const locKey = document.getElementById('location').value;
+        const loc = locations[locKey];
+        const offsetMs = getTimeZoneOffsetMs(Date.now(), loc.timeZone);
+        const offsetHours = offsetMs / 3600000;
+        const sign = offsetHours >= 0 ? '+' : '';
+        document.getElementById('tz-info').innerText = `${loc.timeZone} · UTC${sign}${offsetHours}`;
+    }
+
+    function setNow() {
+        const locKey = document.getElementById('location').value;
+        const loc = locations[locKey];
+        const parts = getTimeZoneParts(Date.now(), loc.timeZone);
+        document.getElementById('date').value = `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+        document.getElementById('time').value = `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
+    }
+
+    // --- 5. הפונקציה הראשית לחישוב ---
+    function calculateMoon(event) {
+        event.preventDefault();
+        const dateInput = document.getElementById('date').value;
+        const timeInput = document.getElementById('time').value;
+        const locKey = document.getElementById('location').value;
+        const loc = locations[locKey];
+
+        const targetUtcMs = localDateTimeToUtcMs(dateInput, timeInput, loc.timeZone);
+        const utcStartMs = localDateTimeToUtcMs(dateInput, '00:00', loc.timeZone);
+        const [y, m, d] = dateInput.split('-').map(Number);
+        const nextDate = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+        const utcEndMs = localDateTimeToUtcMs(nextDate, '00:00', loc.timeZone);
+
+        const pos = getMoonPosition(targetUtcMs, loc.lat, loc.lng);
+        const times = getMoonRiseSet(utcStartMs, utcEndMs, loc.lat, loc.lng);
+
+        document.getElementById('res-altitude').innerText = `${pos.altitude.toFixed(1)}°`;
+        document.getElementById('res-azimuth').innerText = `${pos.azimuth.toFixed(1)}°`;
+        document.getElementById('res-direction').innerText = getCompassDirection(pos.azimuth);
+
+        // חישוב וציור מצב הירח
+        const currentPhase = getMoonPhase(targetUtcMs);
+        drawMoonPhaseVisual(currentPhase);
+
+        const statusElem = document.getElementById('res-status');
+        const dict = i18n[currentLang];
+        if (pos.altitude > 0) {
+            statusElem.innerText = dict.moonUp;
+            statusElem.className = "horizon-status status-up";
+        } else {
+            statusElem.innerText = dict.moonDown;
+            statusElem.className = "horizon-status status-down";
+        }
+
+        document.getElementById('res-rise').innerText = formatLocalTime(times.rise, loc.timeZone);
+        document.getElementById('res-set').innerText = formatLocalTime(times.set, loc.timeZone);
+        
+        document.getElementById('result').style.display = 'block';
+    }
+
+    window.onload = () => {
+        updateTzInfo();
+        setNow();
+    };
+</script>
+</body>
+</html>
