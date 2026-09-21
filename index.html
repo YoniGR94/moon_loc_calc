@@ -74,13 +74,13 @@
         }
 
         .time-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto;
             gap: 10px;
             align-items: flex-end;
         }
         
         .time-row .form-group {
-            flex: 1;
             margin-bottom: 0;
         }
 
@@ -161,7 +161,7 @@
 
         .big-results-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr; /* שלוש עמודות כעת */
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             text-align: center;
             margin-bottom: 20px;
@@ -268,20 +268,29 @@
         </div>
 
         <div class="time-row form-group">
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group">
                 <label id="lbl-time" for="time">שעה:</label>
                 <input type="time" id="time" required>
             </div>
-            <button type="button" class="btn-now" id="btn-now" onclick="setNow()">עכשיו</button>
+            <button type="button" class="btn-now" id="btn-now" onclick="setNow()">כעת</button>
         </div>
 
         <div class="form-group">
             <label id="lbl-location" for="location">מיקום:</label>
             <select id="location" class="main-select" onchange="updateTzInfo()">
+                <!-- ישראל -->
                 <option value="telaviv" id="loc-tlv">תל אביב, ישראל</option>
+                <option value="haifa" id="loc-hai">חיפה, ישראל</option>
+                <option value="eilat" id="loc-eil">אילת, ישראל</option>
+                <!-- עולם -->
                 <option value="cyprus" id="loc-cyp">ניקוסיה, קפריסין</option>
+                <option value="athens" id="loc-ath">אתונה, יוון</option>
+                <option value="rome" id="loc-rom">רומא, איטליה</option>
                 <option value="vienna" id="loc-vie">וינה, אוסטריה</option>
+                <option value="addis" id="loc-add">אדיס אבבה, אתיופיה</option>
+                <option value="cape" id="loc-cap">קייפטאון, דרום אפריקה</option>
                 <option value="newyork" id="loc-ny">ניו יורק, ארה״ב</option>
+                <option value="la" id="loc-la">לוס אנג׳לס, ארה״ב</option>
             </select>
             <div id="tz-info" class="timezone-info"></div>
         </div>
@@ -302,7 +311,6 @@
                 <div class="main-val" id="res-azimuth"></div>
                 <div class="sub-val" id="res-direction"></div>
             </div>
-            <!-- הקובייה החדשה למצב הירח -->
             <div class="result-box phase-box">
                 <label id="lbl-phase">מצב הירח</label>
                 <div class="moon-visual">
@@ -335,34 +343,53 @@
     // --- 1. הגדרות ונתונים ---
     const locations = {
         telaviv: { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" },
+        haifa:   { lat: 32.7940, lng: 34.9896, timeZone: "Asia/Jerusalem" },
+        eilat:   { lat: 29.5577, lng: 34.9519, timeZone: "Asia/Jerusalem" },
         cyprus:  { lat: 35.1856, lng: 33.3823, timeZone: "Asia/Nicosia" },
+        athens:  { lat: 37.9838, lng: 23.7275, timeZone: "Europe/Athens" },
+        rome:    { lat: 41.9028, lng: 12.4964, timeZone: "Europe/Rome" },
         vienna:  { lat: 48.2082, lng: 16.3738, timeZone: "Europe/Vienna" },
-        newyork: { lat: 40.7128, lng: -74.0060, timeZone: "America/New_York" }
+        addis:   { lat: 9.0320,  lng: 38.7482, timeZone: "Africa/Addis_Ababa" },
+        cape:    { lat: -33.9249,lng: 18.4241, timeZone: "Africa/Johannesburg" },
+        newyork: { lat: 40.7128, lng: -74.0060, timeZone: "America/New_York" },
+        la:      { lat: 34.0522, lng: -118.2437, timeZone: "America/Los_Angeles" }
     };
 
     // מילון שפות מעודכן
     const i18n = {
         he: {
-            title: "מיקום הירח", date: "תאריך:", time: "שעה:", now: "עכשיו", location: "מיקום:",
-            calc: "חשב מיקום", alt: "גובה", az: "אזימוט", rise: "זריחה", set: "שקיעה",
+            title: "מיקום הירח", date: "תאריך:", time: "שעה:", now: "כעת", location: "מיקום:",
+            calc: "חשב מיקום", alt: "גובה", az: "אזימוט", rise: "זריחה", set: "שקיעה", noneToday: "אין היום",
             moonUp: "הירח מעל האופק", moonDown: "הירח מתחת לאופק", dirRtl: "rtl", phaseLbl: "מצב הירח",
-            locs: { tlv: "תל אביב, ישראל", cyp: "ניקוסיה, קפריסין", vie: "וינה, אוסטריה", ny: "ניו יורק, ארה״ב" },
+            locs: { 
+                tlv: "תל אביב, ישראל", hai: "חיפה, ישראל", eil: "אילת, ישראל",
+                cyp: "ניקוסיה, קפריסין", ath: "אתונה, יוון", rom: "רומא, איטליה", vie: "וינה, אוסטריה", 
+                add: "אדיס אבבה, אתיופיה", cap: "קייפטאון, דרום אפריקה", ny: "ניו יורק, ארה״ב", la: "לוס אנג׳לס, ארה״ב" 
+            },
             compass: ["צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב"],
             phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" }
         },
         en: {
             title: "Moon Position", date: "Date:", time: "Time:", now: "Now", location: "Location:",
-            calc: "Calculate", alt: "Altitude", az: "Azimuth", rise: "Rise", set: "Set",
+            calc: "Calculate", alt: "Altitude", az: "Azimuth", rise: "Rise", set: "Set", noneToday: "None today",
             moonUp: "Moon is above horizon", moonDown: "Moon is below horizon", dirRtl: "ltr", phaseLbl: "Moon Phase",
-            locs: { tlv: "Tel Aviv, Israel", cyp: "Nicosia, Cyprus", vie: "Vienna, Austria", ny: "New York, USA" },
+            locs: { 
+                tlv: "Tel Aviv, Israel", hai: "Haifa, Israel", eil: "Eilat, Israel",
+                cyp: "Nicosia, Cyprus", ath: "Athens, Greece", rom: "Rome, Italy", vie: "Vienna, Austria", 
+                add: "Addis Ababa, Ethiopia", cap: "Cape Town, South Africa", ny: "New York, USA", la: "Los Angeles, USA" 
+            },
             compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
             phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" }
         },
         ar: {
             title: "موقع القمر", date: "التاريخ:", time: "الوقت:", now: "الآن", location: "الموقع:",
-            calc: "احسب الموقع", alt: "الارتفاع", az: "السمت", rise: "شروق", set: "غروب",
+            calc: "احسب الموقع", alt: "الارتفاع", az: "السمت", rise: "شروق", set: "غروب", noneToday: "لا يوجد اليوم",
             moonUp: "القمر فوق الأفق", moonDown: "القمر تحت الأفق", dirRtl: "rtl", phaseLbl: "طور القمر",
-            locs: { tlv: "تل أبيب، إسرائيل", cyp: "نيقوسيا، قبرص", vie: "فيينا، النمسا", ny: "نيويورك، أمريكا" },
+            locs: { 
+                tlv: "تل أبيب، إسرائيل", hai: "حيفا، إسرائيل", eil: "إيلات، إسرائيل",
+                cyp: "نيقوسيا، قبرص", ath: "أثينا، اليونان", rom: "روما، إيطاليا", vie: "فيينا، النمسا", 
+                add: "أديس أبابا، إثيوبيا", cap: "كيب تاون، جنوب أفريقيا", ny: "نيويورك، أمريكا", la: "لوس أنجلوس، أمريكا" 
+            },
             compass: ["شمال", "شمال شرقي", "شرق", "جنوب شرقي", "جنوب", "جنوب غربي", "غرب", "شمال غربي"],
             phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" }
         }
@@ -392,9 +419,16 @@
         document.getElementById('lbl-phase').innerText = dict.phaseLbl;
         
         document.getElementById('loc-tlv').innerText = dict.locs.tlv;
+        document.getElementById('loc-hai').innerText = dict.locs.hai;
+        document.getElementById('loc-eil').innerText = dict.locs.eil;
         document.getElementById('loc-cyp').innerText = dict.locs.cyp;
+        document.getElementById('loc-ath').innerText = dict.locs.ath;
+        document.getElementById('loc-rom').innerText = dict.locs.rom;
         document.getElementById('loc-vie').innerText = dict.locs.vie;
+        document.getElementById('loc-add').innerText = dict.locs.add;
+        document.getElementById('loc-cap').innerText = dict.locs.cap;
         document.getElementById('loc-ny').innerText = dict.locs.ny;
+        document.getElementById('loc-la').innerText = dict.locs.la;
 
         if (document.getElementById('result').style.display === 'block') {
             document.getElementById('btn-calc').click();
@@ -431,18 +465,18 @@
         return { azimuth: (az * deg) % 360, altitude: h * deg };
     }
 
+    // פונקציה מעודכנת לאיסוף כל הזריחות והשקיעות בחלון הזמן
     function getMoonRiseSet(utcStartMs, utcEndMs, lat, lng) {
-        let rise = null, set = null;
+        let rises = [], sets = [];
         const h0 = -0.583;
         let prevAlt = getMoonPosition(utcStartMs, lat, lng).altitude;
         for (let t = utcStartMs + 2 * 60000; t <= utcEndMs; t += 2 * 60000) {
             const alt = getMoonPosition(t, lat, lng).altitude;
-            if (prevAlt < h0 && alt >= h0 && rise === null) rise = t;
-            if (prevAlt >= h0 && alt < h0 && set === null) set = t;
-            if (rise !== null && set !== null) break;
+            if (prevAlt < h0 && alt >= h0) rises.push(t);
+            if (prevAlt >= h0 && alt < h0) sets.push(t);
             prevAlt = alt;
         }
-        return { rise, set };
+        return { rises, sets };
     }
 
     // --- חישוב וציור מצב הירח ---
@@ -576,12 +610,14 @@
             statusElem.className = "horizon-status status-down";
         }
 
-// בדיקה אם הירח זורח/שוקע מחוץ לגבולות היום הנוכחי
-        let riseText = times.rise ? formatLocalTime(times.rise, loc.timeZone) : 
-                       (getMoonPosition(utcStartMs, loc.lat, loc.lng).altitude > 0 ? "00:00-" : "23:59+");
+        // בדיקה אם הירח זורח/שוקע עם תמיכה במערך הזמנים
+        let riseText = times.rises.length > 0 ? 
+                       times.rises.map(t => formatLocalTime(t, loc.timeZone)).join(', ') : 
+                       dict.noneToday;
                        
-        let setText = times.set ? formatLocalTime(times.set, loc.timeZone) : 
-                      (getMoonPosition(utcEndMs, loc.lat, loc.lng).altitude > 0 ? "23:59+" : "00:00-");
+        let setText = times.sets.length > 0 ? 
+                      times.sets.map(t => formatLocalTime(t, loc.timeZone)).join(', ') : 
+                      dict.noneToday;
 
         document.getElementById('res-rise').innerText = riseText;
         document.getElementById('res-set').innerText = setText;
