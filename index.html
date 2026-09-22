@@ -296,7 +296,9 @@
                 <option value="telaviv" id="loc-tlv">תל אביב, ישראל</option>
                 <option value="haifa" id="loc-hai">חיפה, ישראל</option>
                 <option value="eilat" id="loc-eil">אילת, ישראל</option>
-                <!-- עולם -->
+                <!-- עולם (כולל חצי האי ערב) -->
+                <option value="riyadh" id="loc-riy">ריאד, ערב הסעודית</option>
+                <option value="dubai" id="loc-dub">דובאי, איחוד האמירויות</option>
                 <option value="cyprus" id="loc-cyp">ניקוסיה, קפריסין</option>
                 <option value="athens" id="loc-ath">אתונה, יוון</option>
                 <option value="rome" id="loc-rom">רומא, איטליה</option>
@@ -338,8 +340,9 @@
         </div>
 
         <div class="rise-set-row">
-            <div><span id="lbl-rise">זריחה</span> <span id="res-rise"></span></div>
-            <div><span id="lbl-set">שקיעה</span> <span id="res-set"></span></div>
+            <!-- מזהים שנוספו לצורך סידור דינאמי -->
+            <div id="box-rise"><span id="lbl-rise">זריחה</span> <span id="res-rise"></span></div>
+            <div id="box-set"><span id="lbl-set">שקיעה</span> <span id="res-set"></span></div>
         </div>
     </div>
 
@@ -359,6 +362,8 @@
         telaviv: { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" },
         haifa:   { lat: 32.7940, lng: 34.9896, timeZone: "Asia/Jerusalem" },
         eilat:   { lat: 29.5577, lng: 34.9519, timeZone: "Asia/Jerusalem" },
+        riyadh:  { lat: 24.7136, lng: 46.6753, timeZone: "Asia/Riyadh" },
+        dubai:   { lat: 25.2048, lng: 55.2708, timeZone: "Asia/Dubai" },
         cyprus:  { lat: 35.1856, lng: 33.3823, timeZone: "Asia/Nicosia" },
         athens:  { lat: 37.9838, lng: 23.7275, timeZone: "Europe/Athens" },
         rome:    { lat: 41.9028, lng: 12.4964, timeZone: "Europe/Rome" },
@@ -377,6 +382,7 @@
             moonUp: "הירח מעל האופק", moonDown: "הירח מתחת לאופק", dirRtl: "rtl", phaseLbl: "מצב הירח",
             locs: { 
                 tlv: "תל אביב, ישראל", hai: "חיפה, ישראל", eil: "אילת, ישראל",
+                riy: "ריאד, ערב הסעודית", dub: "דובאי, איחוד האמירויות",
                 cyp: "ניקוסיה, קפריסין", ath: "אתונה, יוון", rom: "רומא, איטליה", vie: "וינה, אוסטריה", 
                 add: "אדיס אבבה, אתיופיה", cap: "קייפטאון, דרום אפריקה", ny: "ניו יורק, ארה״ב", la: "לוס אנג׳לס, ארה״ב" 
             },
@@ -389,6 +395,7 @@
             moonUp: "Moon is above horizon", moonDown: "Moon is below horizon", dirRtl: "ltr", phaseLbl: "Moon Phase",
             locs: { 
                 tlv: "Tel Aviv, Israel", hai: "Haifa, Israel", eil: "Eilat, Israel",
+                riy: "Riyadh, Saudi Arabia", dub: "Dubai, UAE",
                 cyp: "Nicosia, Cyprus", ath: "Athens, Greece", rom: "Rome, Italy", vie: "Vienna, Austria", 
                 add: "Addis Ababa, Ethiopia", cap: "Cape Town, South Africa", ny: "New York, USA", la: "Los Angeles, USA" 
             },
@@ -401,6 +408,7 @@
             moonUp: "القمر فوق الأفق", moonDown: "القمر تحت الأفق", dirRtl: "rtl", phaseLbl: "طور القمر",
             locs: { 
                 tlv: "تل أبيب، إسرائيل", hai: "حيفا، إسرائيل", eil: "إيلات، إسرائيل",
+                riy: "الرياض، السعودية", dub: "دبي، الإمارات",
                 cyp: "نيقوسيا، قبرص", ath: "أثينا، اليونان", rom: "روما، إيطاليا", vie: "فيينا، النمسا", 
                 add: "أديس أبابا، إثيوبيا", cap: "كيب تاون، جنوب أفريقيا", ny: "نيويورك، أمريكا", la: "لوس أنجلوس، أمريكا" 
             },
@@ -435,6 +443,8 @@
         document.getElementById('loc-tlv').innerText = dict.locs.tlv;
         document.getElementById('loc-hai').innerText = dict.locs.hai;
         document.getElementById('loc-eil').innerText = dict.locs.eil;
+        document.getElementById('loc-riy').innerText = dict.locs.riy;
+        document.getElementById('loc-dub').innerText = dict.locs.dub;
         document.getElementById('loc-cyp').innerText = dict.locs.cyp;
         document.getElementById('loc-ath').innerText = dict.locs.ath;
         document.getElementById('loc-rom').innerText = dict.locs.rom;
@@ -635,6 +645,18 @@
 
         document.getElementById('res-rise').innerText = riseText;
         document.getElementById('res-set').innerText = setText;
+        
+        // סידור דינאמי של שקיעה/זריחה לפי סדר כרונולוגי של הופעתם ביום
+        let firstRise = times.rises.length > 0 ? times.rises[0] : Infinity;
+        let firstSet = times.sets.length > 0 ? times.sets[0] : Infinity;
+        
+        if (firstSet < firstRise) {
+            document.getElementById('box-set').style.order = 1;
+            document.getElementById('box-rise').style.order = 2;
+        } else {
+            document.getElementById('box-rise').style.order = 1;
+            document.getElementById('box-set').style.order = 2;
+        }
         
         document.getElementById('result').style.display = 'block';
     }
