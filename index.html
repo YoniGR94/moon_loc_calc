@@ -210,6 +210,7 @@
         }
         #moon-svg {
             filter: drop-shadow(0 0 6px rgba(255, 225, 53, 0.3));
+            transition: transform 0.3s;
         }
 
         .rise-set-row {
@@ -340,7 +341,6 @@
         </div>
 
         <div class="rise-set-row">
-            <!-- מזהים שנוספו לצורך סידור דינאמי -->
             <div id="box-rise"><span id="lbl-rise">זריחה</span> <span id="res-rise"></span></div>
             <div id="box-set"><span id="lbl-set">שקיעה</span> <span id="res-set"></span></div>
         </div>
@@ -357,6 +357,33 @@
 </div>
 
 <script>
+    /*
+     * Astronomical calculations in this tool are based on the simplified model from SunCalc v1.x
+     * 
+     * Copyright (c) 2014, Vladimir Agafonkin
+     * All rights reserved.
+     * 
+     * Redistribution and use in source and binary forms, with or without modification, are
+     * permitted provided that the following conditions are met:
+     * 
+     *    1. Redistributions of source code must retain the above copyright notice, this list of
+     *       conditions and the following disclaimer.
+     * 
+     *    2. Redistributions in binary form must reproduce the above copyright notice, this list
+     *       of conditions and the following disclaimer in the documentation and/or other materials
+     *       provided with the distribution.
+     * 
+     * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+     * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+     * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+     * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+     * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+     * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+     * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+     * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     */
+
     // --- 1. הגדרות ונתונים ---
     const locations = {
         telaviv: { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" },
@@ -489,7 +516,6 @@
         return { azimuth: (az * deg) % 360, altitude: h * deg };
     }
 
-    // פונקציה מעודכנת לאיסוף כל הזריחות והשקיעות בחלון הזמן
     function getMoonRiseSet(utcStartMs, utcEndMs, lat, lng) {
         let rises = [], sets = [];
         const h0 = -0.583;
@@ -505,6 +531,9 @@
 
     // --- חישוב וציור מצב הירח ---
     function getMoonPhase(utcMs) {
+        // הערה לגבי דיוק: הפאזה מחושבת על בסיס ממוצע החודש הסינודי (29.53058867 ימים)
+        // מייחוס של ה-6 לינואר 2000. היא אינה מחושבת על פי גיאומטריה שמש-ירח אמיתית 
+        // ויכולה לסטות בעד כ-14 שעות לעומת הפאזה הריאלית.
         const d = toDays(utcMs);
         const newMoonEpoch = toDays(Date.UTC(2000, 0, 6, 14, 24, 0));
         const lunation = 29.53058867;
@@ -513,7 +542,7 @@
         return phase; 
     }
 
-    function drawMoonPhaseVisual(phase) {
+    function drawMoonPhaseVisual(phase, lat) {
         const pDict = i18n[currentLang].phases;
         let phaseText = "";
 
@@ -529,6 +558,15 @@
         document.getElementById('res-phase-text').innerText = phaseText;
 
         const path = document.getElementById('moon-lit-path');
+        const svg = document.getElementById('moon-svg');
+        
+        // התאמה לחצי הכדור הדרומי - הירח מתמלא משמאל לימין בדרום
+        if (lat < 0) {
+            svg.style.transform = 'scaleX(-1)';
+        } else {
+            svg.style.transform = 'scaleX(1)';
+        }
+
         let d = ""; 
         
         if (phase <= 0.5) {
@@ -620,9 +658,9 @@
         document.getElementById('res-azimuth').innerText = `${pos.azimuth.toFixed(1)}°`;
         document.getElementById('res-direction').innerText = getCompassDirection(pos.azimuth);
 
-        // חישוב וציור מצב הירח
+        // חישוב וציור מצב הירח עם התחשבות בקו הרוחב להפיכת האוריינטציה בדרום
         const currentPhase = getMoonPhase(targetUtcMs);
-        drawMoonPhaseVisual(currentPhase);
+        drawMoonPhaseVisual(currentPhase, loc.lat);
 
         const statusElem = document.getElementById('res-status');
         const dict = i18n[currentLang];
@@ -634,7 +672,6 @@
             statusElem.className = "horizon-status status-down";
         }
 
-        // בדיקה אם הירח זורח/שוקע עם תמיכה במערך הזמנים
         let riseText = times.rises.length > 0 ? 
                        times.rises.map(t => formatLocalTime(t, loc.timeZone)).join(', ') : 
                        dict.noneToday;
@@ -646,7 +683,6 @@
         document.getElementById('res-rise').innerText = riseText;
         document.getElementById('res-set').innerText = setText;
         
-        // סידור דינאמי של שקיעה/זריחה לפי סדר כרונולוגי של הופעתם ביום
         let firstRise = times.rises.length > 0 ? times.rises[0] : Infinity;
         let firstSet = times.sets.length > 0 ? times.sets[0] : Infinity;
         
