@@ -1,17 +1,17 @@
 # 🌙 Moon Position Calculator
 
-A lightweight, web-based astronomical calculator that determines the approximate position, phase, and rise/set times of the moon for a specific date, time, and location. Built completely with HTML, CSS, and vanilla JavaScript—no external dependencies required.
+A lightweight, web-based astronomical calculator that determines the position, phase, and rise/set times of the moon for a specific date, time, and location. Built completely with HTML, CSS, and vanilla JavaScript—no external dependencies required.
 
 Try here:
 🌙 [Moon Position Calculator](https://yonigr94.github.io/moon_loc_calc/)
 
 ## ✨ Features
 
-* **Astronomical Data**: Calculates the moon's altitude (height above the horizon) and azimuth (compass direction) based on a simplified orbital model.
-* **Dynamic Moon Phases**: Generates an SVG graphic representing the current moon phase based on the average synodic month.
-* **Rise and Set Times**: Calculates local moonrise and moonset events for the selected day. *(Note: Because a lunar day is about 24 hours and 50 minutes long, the moon rises roughly 50 minutes later each day. As a result, there is usually one calendar day each month where the moon simply skips a rise or set event!)*
-* **Built-in Time Zone Handling**: Handles complex time zone conversions directly in the browser for predefined locations.
-* **Multi-Language Support**: Full localization in English, Hebrew, and Arabic, featuring automatic RTL/LTR layout switching.
+* **High-Accuracy Astronomical Data**: Calculates the moon's altitude and azimuth using a robust orbital model that includes major perturbations (Evection, Variation).
+* **Atmospheric & Optical Corrections**: Automatically adjusts for lunar parallax and atmospheric refraction to provide precise horizon-crossing times.
+* **Geometric Moon Phases**: Generates an SVG graphic representing the moon phase calculated directly from real-time Sun-Moon geometric elongation.
+* **Rise and Set Times**: Calculates local moonrise and moonset events. *(Note: Because a lunar day is about 24 hours and 50 minutes long, there is usually one calendar day each month where the moon skips a rise or set event!)*
+* **Multi-Language & Hemisphere Support**: Full localization in English, Hebrew, and Arabic, featuring automatic RTL/LTR layout switching and dynamic phase orientation for the Southern Hemisphere.
 
 ## 🚀 Getting Started
 
@@ -23,68 +23,53 @@ Ever since I was young, it always surprised me that—despite children's books a
 
 Now that I’m a parent, my own children notice the daytime moon too, whether it’s 8:00 AM or early evening before the sun has even set. That’s just how kids are: they look at the world exactly as it is and speak whatever is on their minds.
 
-Something else that changed as I grew older is that my ability to build software has improved exponentially, thanks to LLMs. So, I decided to create a tool that calculates roughly where the moon will be in the sky at any given moment, along with its daily rise and set times.
-
-I built it for one simple reason: to point out the moon to my kids. But you might find an entirely different use for it—this calculator is open for anyone to use and enjoy.
+I decided to create a tool that calculates exactly where the moon will be in the sky at any given moment, along with its daily rise and set times. I built it for one simple reason: to point out the moon to my kids. But you might find an entirely different use for it—this calculator is open for anyone to use and enjoy.
 
 ## 🔭 Inspiration for Use
 
-* **Casual Stargazing & Astronomy**: Figure out if the moon's brightness will wash out a meteor shower on a given night, or find a good time to observe craters through a telescope.
-* **Educational Tool**: Use the open-source code as a sandbox to learn how mathematical coordinate transformations and Keplerian mechanics translate into code.
+* **Astrophotography & Stargazing**: Predict when and where the moon will rise above a specific horizon, or figure out if the moon's brightness will wash out a meteor shower.
+* **Educational Tool**: Use the open-source code as a sandbox to learn how mathematical coordinate transformations, Keplerian mechanics, and atmospheric optics translate into code.
 * **Outdoor & Navigation**: Understand nighttime illumination for camping, night hiking, or sailing.
 
 ## 🧮 The Math Behind the Magic
 
-The engine of this calculator relies on converting standard time into astronomical metrics and applying orbital equations. Here is a simplified breakdown of the core math used in the code:
+The engine of this calculator relies on converting standard time into astronomical metrics, applying orbital perturbations, and adjusting for optics. Here is a simplified breakdown:
 
 ### 1. The Independent Variable: Time ($d$)
-The primary and only variable in our moon model is time. In the code, the function `toDays(dateValue)` takes a timestamp and converts it to $d$ – the number of days passed since the astronomical reference date known as J2000.0 (January 1, 2000, at exactly 12:00 TT/Noon). This 12-hour offset is why the formula subtracts 10957.5 rather than exactly 10957:
+The primary variable is time, converted to $d$ – the number of days passed since the astronomical reference date known as J2000.0 (January 1, 2000, at exactly 12:00 TT/Noon):
 $$d = \frac{\text{time in ms}}{86400000} - 10957.5$$
 
-### 2. Linear Equations (Mean Elements)
-In the first step of the calculation, we assume the moon moves in a uniform circular motion. We calculate three base angles:
-* **$L$ (Mean Longitude):** $$L = 218.316^\circ + 13.176396^\circ \cdot d$$
-* **$M$ (Mean Anomaly):** $$M = 134.963^\circ + 13.064993^\circ \cdot d$$
-* **$F$ (Argument of Latitude):** $$F = 93.272^\circ + 13.229350^\circ \cdot d$$
+### 2. Linear Equations & Perturbations (The Orbit)
+We first calculate the mean position of the Moon and the Sun. Because the Moon's orbit is heavily influenced by the Sun's gravity and is highly elliptical, we apply several major trigonometric corrections to its longitude ($l$):
+* **Equation of the Center ($6.289^\circ$):** Corrects for the elliptical shape of the orbit.
+* **Evection ($1.274^\circ$):** Corrects for the Sun's gravitational pull altering the eccentricity of the Moon's orbit.
+* **Variation ($0.658^\circ$):** Corrects for the Moon speeding up as it approaches New/Full phases and slowing down at the quarters.
+* **Annual Equation ($0.186^\circ$):** Adjusts for Earth's varying distance from the Sun throughout the year.
 
-The coefficient $13.17^\circ$ represents the moon's eastward movement relative to the background stars each day.
+### 3. Coordinate Transformation (Space to Equatorial)
+The model transforms these Ecliptic coordinates into the Equatorial system (Right Ascension and Declination) using Earth's axial tilt ($e \approx 23.44^\circ$). Finally, using the user's specific latitude and longitude, spherical trigonometry determines the exact local **Altitude** and **Azimuth**.
 
-### 3. Trigonometric Corrections (Perturbations)
-In reality, the moon's orbit is an ellipse, so its orbital speed varies (Kepler's laws). We use a trigonometric series to add "perturbations":
+### 4. Optical Corrections (Parallax & Refraction)
+The position in space doesn't perfectly match what human eyes see from the surface. We apply two critical corrections to the altitude:
+* **Lunar Parallax:** Because the moon is relatively close to Earth, viewing it from the planet's surface (rather than its center) "pulls" the moon down by about $0.95^\circ$ at the horizon.
+* **Atmospheric Refraction:** Earth's atmosphere acts like a lens, bending light and "lifting" the apparent position of the moon by roughly $0.5^\circ$ as it crosses the horizon. 
+Together, these ensure highly accurate rise and set times.
 
-* **$l$ (Actual Longitude):**
-  $$l = L + 6.289^\circ \sin(M)$$
-  The $6.289^\circ$ coefficient comes directly from the eccentricity of the moon's orbit ($e \approx 0.0549$). In radians, this main correction term is $2e$, which evaluates to roughly $6.29^\circ$ ($2 \times 0.0549 \times 57.3^\circ$).
-  
-* **$b$ (Actual Latitude):**
-  $$b = 5.128^\circ \sin(F)$$
-  The moon's orbit is tilted relative to the ecliptic plane by about $5.1^\circ$.
-
-* **$dt$ (Distance - Earth-to-Moon distance in km):**
-  $$dt = 385001 - 20905 \cos(M)$$
-  Because the orbit is elliptical, this distance varies as a cosine function (this fluctuation creates the "Supermoon" phenomenon).
-
-### 4. Coordinate Transformation (Space to Equatorial System)
-The math gives us the moon's position relative to the Ecliptic. We perform a coordinate transformation to the Equatorial system using Earth's axial tilt constant ($e \approx 23.44^\circ$):
-$$\alpha = \arctan2(\sin(l) \cos(e) - \tan(b) \sin(e), \cos(l))$$
-$$\delta = \arcsin(\sin(b) \cos(e) + \cos(b) \sin(e) \sin(l))$$
-
-From there, the application uses **spherical trigonometry** (specifically calculating the local hour angle: $H = \text{sidereal time} - \alpha$) to combine these spherical coordinates with the specific latitude and longitude of the user's city, finding the exact local viewing angles: **Altitude** and **Azimuth**.
+### 5. True Geometric Phase
+Instead of estimating the phase using an average 29.53-day cycle, the application calculates the phase dynamically by finding the exact longitudinal angle (elongation) between the Moon and the Sun in real-time.
 
 ## ⚠️ Limitations
 
-While this tool is great for casual observation and education, it is not designed for high-precision astrophotography planning:
+While this tool offers excellent accuracy for general astronomy and planning, keep the following in mind:
 
-1. **Astronomical Accuracy**: The calculation uses a simplified model based on SunCalc 1.x. It omits dozens of lunar perturbation terms (such as evection and variation). As a result, the altitude error averages ~0.73° (up to 2.45°—which is about 3-4 moon diameters!), and azimuth errors can spike significantly (up to 19°) when the moon is near the zenith.
-2. **Refraction & Parallax**: The model does not fully correct for atmospheric refraction or lunar parallax. Because the moon is relatively close to Earth, lunar parallax shifts its apparent position by roughly 0.95° at the horizon. This missing correction contributes to an error of about 3 to 8 minutes in rise and set times.
-3. **Average Moon Phase**: The phase is not calculated from exact real-time sun-moon geometry. Instead, it uses an average synodic month (29.53 days) starting from a J2000.0 epoch (Jan 6, 2000). The true astronomical phase can deviate from this average by up to ~14 hours.
-4. **Hardcoded Locations**: Currently, the tool relies on a fixed dictionary of major cities rather than supporting dynamic GPS coordinates or arbitrary search functionality.
-5. **Phase Visuals**: The moon phase graphic uses a simplified SVG scaling transformation to adapt between the Northern and Southern hemispheres, rather than a physically precise terminator line projection.
+1. **Truncated Model:** The algorithm includes the largest perturbation terms (Evection, Variation) but omits dozens of minor terms found in the full ELP2000 or full Meeus models. Altitude/Azimuth accuracy is generally within ~0.2°, which is sufficient for most uses but not for strict scientific ephemerides.
+2. **Hardcoded Locations:** Currently, the tool relies on a fixed dictionary of major cities rather than supporting dynamic GPS coordinates or arbitrary search functionality.
+3. **Phase Visuals:** The moon phase graphic uses a simplified SVG scaling transformation (and flips horizontally for the Southern Hemisphere) rather than a physically precise terminator line projection.
 
 ## 📄 License & Credits
 
 * **Project License**: [MIT License](LICENSE) (Open for anyone to use and modify).
-* **Astronomical Calculations**: The lunar math engine is based on [SunCalc v1.x](https://github.com/mourner/suncalc) (Copyright (c) 2014, Vladimir Agafonkin, released under the BSD-2-Clause License), which derives its simplified formulas from Jean Meeus' highly regarded book, *Astronomical Algorithms*. *(Note: SunCalc v2.0 offers higher precision, but this tool implements the lightweight v1.x model).*
+* **Astronomical Calculations**: Core celestial elements are derived from [SunCalc v1.x](https://github.com/mourner/suncalc) (Copyright (c) 2014, Vladimir Agafonkin, BSD-2-Clause License), which is based on Jean Meeus' *Astronomical Algorithms*. This project extends those core elements with larger perturbation terms, optical corrections, and sun-based geometric phases for enhanced precision.
 
 ## 👨‍💻 Author
 
