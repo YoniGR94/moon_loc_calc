@@ -56,7 +56,7 @@
             width: 100%;
             max-width: 460px;
             background-color: rgba(255, 255, 255, 0.05);
-            padding: 20px 25px; /* צומצם למניעת גלילה */
+            padding: 20px 25px; 
             border-radius: 16px;
             border: 1px solid rgba(255, 225, 53, 0.2);
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
@@ -64,7 +64,7 @@
         }
 
         .app-container.map-mode .panel {
-            width: 460px; /* הורחב מעט למניעת גלילה */
+            width: 460px; 
             height: 100%;
         }
 
@@ -99,17 +99,16 @@
             box-shadow: 0 0 0 2px var(--banana-yellow), 0 0 14px 4px rgba(255, 225, 53, 0.6);
         }
 
-        .header { text-align: center; margin-bottom: 15px; } /* רווח צומצם */
+        .header { text-align: center; margin-bottom: 15px; } 
         .header svg { width: 50px; height: 50px; fill: var(--banana-yellow); margin-bottom: 0px; }
         h1 { color: var(--banana-yellow); font-size: 22px; margin: 0; }
         
         .top-bar { display: flex; justify-content: space-between; margin-bottom: 10px; }
         
         .lang-select { background-color: rgba(255, 255, 255, 0.1); color: var(--banana-light); border: 1px solid var(--banana-yellow); padding: 5px; border-radius: 5px; cursor: pointer; }
-        /* תיקון קריאות בתפריט הנפתח */
         .lang-select option { background-color: var(--white); color: var(--royal-blue); }
 
-        .form-group { margin-bottom: 15px; } /* רווח צומצם */
+        .form-group { margin-bottom: 15px; } 
         .time-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: flex-end; }
         .time-row .form-group { margin-bottom: 0; }
         
@@ -118,6 +117,9 @@
             width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--banana-yellow);
             background-color: rgba(10, 27, 63, 0.8); color: var(--white); font-size: 16px; box-sizing: border-box; color-scheme: dark;
         }
+
+        optgroup { background-color: #0A1B3F; color: var(--banana-yellow); font-weight: bold; }
+        option { color: var(--white); }
 
         .timezone-info { font-size: 13px; color: var(--grey-light); margin-top: 4px; text-align: left; direction: ltr; }
         
@@ -202,22 +204,7 @@
             <div class="form-group">
                 <label id="lbl-location" for="location">מיקום:</label>
                 <select id="location" class="main-select" onchange="handleListSelection()">
-                    <option value="telaviv" id="loc-tlv">תל אביב, ישראל</option>
-                    <option value="haifa" id="loc-hai">חיפה, ישראל</option>
-                    <option value="eilat" id="loc-eil">אילת, ישראל</option>
-                    <option value="riyadh" id="loc-riy">ריאד, ערב הסעודית</option>
-                    <option value="dubai" id="loc-dub">דובאי, איחוד האמירויות</option>
-                    <option value="cyprus" id="loc-cyp">ניקוסיה, קפריסין</option>
-                    <option value="athens" id="loc-ath">אתונה, יוון</option>
-                    <option value="rome" id="loc-rom">רומא, איטליה</option>
-                    <option value="vienna" id="loc-vie">וינה, אוסטריה</option>
-                    <option value="addis" id="loc-add">אדיס אבבה, אתיופיה</option>
-                    <option value="cape" id="loc-cap">קייפטאון, דרום אפריקה</option>
-                    <option value="newyork" id="loc-ny">ניו יורק, ארה״ב</option>
-                    <option value="la" id="loc-la">לוס אנג׳לס, ארה״ב</option>
-                    <option value="buenosaires" id="loc-ba">בואנוס איירס, ארגנטינה</option>
-                    <option value="mexicocity" id="loc-mc">מקסיקו סיטי, מקסיקו</option>
-                    <option value="custom" id="loc-custom" style="display:none;">מיקום מותאם אישית (מפה)</option>
+                    <!-- רשימת הערים תאוכלס דינמית על ידי ה-JS -->
                 </select>
                 <div id="tz-info" class="timezone-info"></div>
                 <a id="btn-open-map" class="switch-mode-link" onclick="toggleMapMode(true)">בחר עיר אחרת (מפה)</a>
@@ -276,26 +263,76 @@
 </div>
 
 <script>
-    const locations = {
-        telaviv:     { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" },
-        haifa:       { lat: 32.7940, lng: 34.9896, timeZone: "Asia/Jerusalem" },
-        eilat:       { lat: 29.5577, lng: 34.9519, timeZone: "Asia/Jerusalem" },
-        riyadh:      { lat: 24.7136, lng: 46.6753, timeZone: "Asia/Riyadh" },
-        dubai:       { lat: 25.2048, lng: 55.2708, timeZone: "Asia/Dubai" },
-        cyprus:      { lat: 35.1856, lng: 33.3823, timeZone: "Asia/Nicosia" },
-        athens:      { lat: 37.9838, lng: 23.7275, timeZone: "Europe/Athens" },
-        rome:        { lat: 41.9028, lng: 12.4964, timeZone: "Europe/Rome" },
-        vienna:      { lat: 48.2082, lng: 16.3738, timeZone: "Europe/Vienna" },
-        addis:       { lat: 9.0320,  lng: 38.7482, timeZone: "Africa/Addis_Ababa" },
-        cape:        { lat: -33.9249,lng: 18.4241, timeZone: "Africa/Johannesburg" },
-        newyork:     { lat: 40.7128, lng: -74.0060, timeZone: "America/New_York" },
-        la:          { lat: 34.0522, lng: -118.2437, timeZone: "America/Los_Angeles" },
-        buenosaires: { lat: -34.6037, lng: -58.3816, timeZone: "America/Argentina/Buenos_Aires" },
-        mexicocity:  { lat: 19.4326, lng: -99.1332, timeZone: "America/Mexico_City" },
-        custom:      { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" } // Default fallback
+    // --- נתוני מדינות וערים מובנים ---
+    const countriesData = {
+        IL: { he: "ישראל", en: "Israel", ar: "إسرائيل" },
+        SA: { he: "ערב הסעודית", en: "Saudi Arabia", ar: "السعودية" },
+        AE: { he: "איחוד האמירויות", en: "UAE", ar: "الإمارات" },
+        CY: { he: "קפריסין", en: "Cyprus", ar: "قبرص" },
+        GR: { he: "יוון", en: "Greece", ar: "اليونان" },
+        IT: { he: "איטליה", en: "Italy", ar: "إيطاليا" },
+        AT: { he: "אוסטריה", en: "Austria", ar: "النمسا" },
+        ET: { he: "אתיופיה", en: "Ethiopia", ar: "إثيوبيا" },
+        ZA: { he: "דרום אפריקה", en: "South Africa", ar: "جنوب أفريقيا" },
+        US: { he: "ארצות הברית", en: "United States", ar: "الولايات المتحدة" },
+        AR: { he: "ארגנטינה", en: "Argentina", ar: "الأرجنتين" },
+        MX: { he: "מקסיקו", en: "Mexico", ar: "المكسيك" },
+        EC: { he: "אקוודור", en: "Ecuador", ar: "الإكوادور" },
+        NG: { he: "ניגריה", en: "Nigeria", ar: "نيجيريا" },
+        MA: { he: "מרוקו", en: "Morocco", ar: "المغرب" },
+        FR: { he: "צרפת", en: "France", ar: "فرنسا" },
+        HU: { he: "הונגריה", en: "Hungary", ar: "المجر" },
+        NO: { he: "נורבגיה", en: "Norway", ar: "النرويج" },
+        RU: { he: "רוסיה", en: "Russia", ar: "روسيا" },
+        CN: { he: "סין", en: "China", ar: "الصين" },
+        IN: { he: "הודו", en: "India", ar: "الهند" },
+        TH: { he: "תאילנד", en: "Thailand", ar: "تايلاند" }
     };
 
-    let currentLoc = { ...locations.telaviv }; 
+    const citiesData = {
+        telaviv: { country: "IL", lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem", names: { he: "תל אביב", en: "Tel Aviv", ar: "تل أبيب" } },
+        haifa: { country: "IL", lat: 32.7940, lng: 34.9896, timeZone: "Asia/Jerusalem", names: { he: "חיפה", en: "Haifa", ar: "حيفا" } },
+        eilat: { country: "IL", lat: 29.5577, lng: 34.9519, timeZone: "Asia/Jerusalem", names: { he: "אילת", en: "Eilat", ar: "إيلات" } },
+        riyadh: { country: "SA", lat: 24.7136, lng: 46.6753, timeZone: "Asia/Riyadh", names: { he: "ריאד", en: "Riyadh", ar: "الرياض" } },
+        dubai: { country: "AE", lat: 25.2048, lng: 55.2708, timeZone: "Asia/Dubai", names: { he: "דובאי", en: "Dubai", ar: "دبي" } },
+        cyprus: { country: "CY", lat: 35.1856, lng: 33.3823, timeZone: "Asia/Nicosia", names: { he: "ניקוסיה", en: "Nicosia", ar: "نيقوسيا" } },
+        athens: { country: "GR", lat: 37.9838, lng: 23.7275, timeZone: "Europe/Athens", names: { he: "אתונה", en: "Athens", ar: "أثينا" } },
+        rhodes: { country: "GR", lat: 36.4341, lng: 28.2176, timeZone: "Europe/Athens", names: { he: "רודוס", en: "Rhodes", ar: "رودس" } },
+        rome: { country: "IT", lat: 41.9028, lng: 12.4964, timeZone: "Europe/Rome", names: { he: "רומא", en: "Rome", ar: "روما" } },
+        milan: { country: "IT", lat: 45.4642, lng: 9.1900, timeZone: "Europe/Rome", names: { he: "מילאנו", en: "Milan", ar: "ميلانو" } },
+        vienna: { country: "AT", lat: 48.2082, lng: 16.3738, timeZone: "Europe/Vienna", names: { he: "וינה", en: "Vienna", ar: "فيينا" } },
+        addis: { country: "ET", lat: 9.0320,  lng: 38.7482, timeZone: "Africa/Addis_Ababa", names: { he: "אדיס אבבה", en: "Addis Ababa", ar: "أديس أبابا" } },
+        cape: { country: "ZA", lat: -33.9249,lng: 18.4241, timeZone: "Africa/Johannesburg", names: { he: "קייפטאון", en: "Cape Town", ar: "كيب تاون" } },
+        johannesburg: { country: "ZA", lat: -26.2041, lng: 28.0473, timeZone: "Africa/Johannesburg", names: { he: "יוהנסבורג", en: "Johannesburg", ar: "جوهانسبرغ" } },
+        newyork: { country: "US", lat: 40.7128, lng: -74.0060, timeZone: "America/New_York", names: { he: "ניו יורק", en: "New York", ar: "نيويورك" } },
+        la: { country: "US", lat: 34.0522, lng: -118.2437, timeZone: "America/Los_Angeles", names: { he: "לוס אנג׳לס", en: "Los Angeles", ar: "لوس أنجلوس" } },
+        miami: { country: "US", lat: 25.7617, lng: -80.1918, timeZone: "America/New_York", names: { he: "מיאמי", en: "Miami", ar: "ميامي" } },
+        sanfrancisco: { country: "US", lat: 37.7749, lng: -122.4194, timeZone: "America/Los_Angeles", names: { he: "סן פרנסיסקו", en: "San Francisco", ar: "سان فرانسيسكو" } },
+        buenosaires: { country: "AR", lat: -34.6037, lng: -58.3816, timeZone: "America/Argentina/Buenos_Aires", names: { he: "בואנוס איירס", en: "Buenos Aires", ar: "بوينس آيرس" } },
+        mexicocity: { country: "MX", lat: 19.4326, lng: -99.1332, timeZone: "America/Mexico_City", names: { he: "מקסיקו סיטי", en: "Mexico City", ar: "مدينة مكسيكو" } },
+        monterrey: { country: "MX", lat: 25.6866, lng: -100.3161, timeZone: "America/Monterrey", names: { he: "מונטריי", en: "Monterrey", ar: "مونتيري" } },
+        guadalajara: { country: "MX", lat: 20.6597, lng: -103.3496, timeZone: "America/Mexico_City", names: { he: "גוודלחרה", en: "Guadalajara", ar: "غوادالاخارا" } },
+        quito: { country: "EC", lat: -0.1807, lng: -78.4678, timeZone: "America/Guayaquil", names: { he: "קיטו", en: "Quito", ar: "كيتو" } },
+        abuja: { country: "NG", lat: 9.0579, lng: 7.4951, timeZone: "Africa/Lagos", names: { he: "אבוג'ה", en: "Abuja", ar: "أبوجا" } },
+        rabat: { country: "MA", lat: 34.0209, lng: -6.8416, timeZone: "Africa/Casablanca", names: { he: "רבאט", en: "Rabat", ar: "الرباط" } },
+        paris: { country: "FR", lat: 48.8566, lng: 2.3522, timeZone: "Europe/Paris", names: { he: "פריז", en: "Paris", ar: "باريس" } },
+        budapest: { country: "HU", lat: 47.4979, lng: 19.0402, timeZone: "Europe/Budapest", names: { he: "בודפשט", en: "Budapest", ar: "بودابست" } },
+        oslo: { country: "NO", lat: 59.9139, lng: 10.7522, timeZone: "Europe/Oslo", names: { he: "אוסלו", en: "Oslo", ar: "أوسلو" } },
+        tromso: { country: "NO", lat: 69.6492, lng: 18.9553, timeZone: "Europe/Oslo", names: { he: "טרומסה", en: "Tromsø", ar: "ترومسو" } },
+        moscow: { country: "RU", lat: 55.7558, lng: 37.6173, timeZone: "Europe/Moscow", names: { he: "מוסקבה", en: "Moscow", ar: "موسكو" } },
+        stpetersburg: { country: "RU", lat: 59.9311, lng: 30.3609, timeZone: "Europe/Moscow", names: { he: "סנט פטרסבורג", en: "St. Petersburg", ar: "سانت بطرسبرغ" } },
+        vladivostok: { country: "RU", lat: 43.1155, lng: 131.8855, timeZone: "Asia/Vladivostok", names: { he: "ולדיווסטוק", en: "Vladivostok", ar: "فلاديفوستوك" } },
+        beijing: { country: "CN", lat: 39.9042, lng: 116.4074, timeZone: "Asia/Shanghai", names: { he: "בייג'ין", en: "Beijing", ar: "بكين" } },
+        mumbai: { country: "IN", lat: 19.0760, lng: 72.8777, timeZone: "Asia/Kolkata", names: { he: "מומביי", en: "Mumbai", ar: "مومباي" } },
+        delhi: { country: "IN", lat: 28.7041, lng: 77.1025, timeZone: "Asia/Kolkata", names: { he: "דלהי", en: "Delhi", ar: "دلهي" } },
+        agra: { country: "IN", lat: 27.1767, lng: 78.0081, timeZone: "Asia/Kolkata", names: { he: "אגרה", en: "Agra", ar: "أغرة" } },
+        bangkok: { country: "TH", lat: 13.7563, lng: 100.5018, timeZone: "Asia/Bangkok", names: { he: "בנגקוק", en: "Bangkok", ar: "بانكوك" } },
+        phuket: { country: "TH", lat: 7.8804, lng: 98.3922, timeZone: "Asia/Bangkok", names: { he: "פוקט", en: "Phuket", ar: "بوكيت" } },
+        kohsamui: { country: "TH", lat: 9.5120, lng: 100.0136, timeZone: "Asia/Bangkok", names: { he: "קו סמוי", en: "Koh Samui", ar: "كوه ساموي" } }
+    };
+
+    let locations = { custom: { lat: 32.0853, lng: 34.7818, timeZone: "Asia/Jerusalem" } };
+    let currentLoc = { ...citiesData.telaviv }; 
     let currentLang = 'he';
     let mapLoaded = false;
     let mapInstance = null;
@@ -307,7 +344,6 @@
             calc: "חשב מיקום", alt: "גובה", az: "אזימוט", rise: "זריחה", set: "שקיעה", noneToday: "אין היום",
             moonUp: "הירח מעל האופק", moonDown: "הירח מתחת לאופק", dirRtl: "rtl", phaseLbl: "מצב הירח",
             openMap: "בחר עיר אחרת (מפה)", closeMap: "חזרה לרשימה", elevation: "גובה מעל פני הים (מטרים):", custom: "מיקום מותאם אישית (מפה)",
-            locs: { tlv: "תל אביב, ישראל", hai: "חיפה, ישראל", eil: "אילת, ישראל", riy: "ריאד, ערב הסעודית", dub: "דובאי, איחוד האמירויות", cyp: "ניקוסיה, קפריסין", ath: "אתונה, יוון", rom: "רומא, איטליה", vie: "וינה, אוסטריה", add: "אדיס אבבה, אתיופיה", cap: "קייפטאון, דרום אפריקה", ny: "ניו יורק, ארה״ב", la: "לוס אנג׳לס, ארה״ב", ba: "בואנוס איירס, ארגנטינה", mc: "מקסיקו סיטי, מקסיקו" },
             compass: ["צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב"],
             phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" }
         },
@@ -316,7 +352,6 @@
             calc: "Calculate", alt: "Altitude", az: "Azimuth", rise: "Rise", set: "Set", noneToday: "None today",
             moonUp: "Moon is above horizon", moonDown: "Moon is below horizon", dirRtl: "ltr", phaseLbl: "Moon Phase",
             openMap: "Choose another city (Map)", closeMap: "Back to list", elevation: "Elevation above sea level (m):", custom: "Custom location (Map)",
-            locs: { tlv: "Tel Aviv, Israel", hai: "Haifa, Israel", eil: "Eilat, Israel", riy: "Riyadh, Saudi Arabia", dub: "Dubai, UAE", cyp: "Nicosia, Cyprus", ath: "Athens, Greece", rom: "Rome, Italy", vie: "Vienna, Austria", add: "Addis Ababa, Ethiopia", cap: "Cape Town, South Africa", ny: "New York, USA", la: "Los Angeles, USA", ba: "Buenos Aires, Argentina", mc: "Mexico City, Mexico" },
             compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
             phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" }
         },
@@ -325,7 +360,6 @@
             calc: "احسب الموقع", alt: "الارتفاع", az: "السمت", rise: "شروق", set: "غروب", noneToday: "لا يوجد اليوم",
             moonUp: "القمر فوق الأفق", moonDown: "القمر تحت الأفق", dirRtl: "rtl", phaseLbl: "طور القمر",
             openMap: "اختر مدينة أخرى (خريطة)", closeMap: "العودة للقائمة", elevation: "الارتفاع عن مستوى سطح البحر (م):", custom: "موقع مخصص (خريطة)",
-            locs: { tlv: "تل أبيب، إسرائيل", hai: "حيفا، إسرائيل", eil: "إيلات، إسرائيل", riy: "الرياض، السعودية", dub: "دبي، الإمارات", cyp: "نيقوسيا، قبرص", ath: "أثينا، اليونان", rom: "روما، إيطاليا", vie: "فيينا، النمسا", add: "أديس أبابا، إثيوبيا", cap: "كيب تاون، جنوب أفريقيا", ny: "نيويورك، أمريكا", la: "لوس أنجلوس، أمريكا", ba: "بوينس آيرس، الأرجنتين", mc: "مدينة مكسيكو، المكسيك" },
             compass: ["شمال", "شمال شرقي", "شرق", "جنوب شرقي", "جنوب", "جنوب غربي", "غرب", "شمال غربي"],
             phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" }
         }
@@ -353,12 +387,54 @@
         document.getElementById('btn-open-map').innerText = dict.openMap;
         document.getElementById('btn-close-map').innerText = dict.closeMap;
         document.getElementById('lbl-elevation').innerText = dict.elevation;
-        document.getElementById('loc-custom').innerText = dict.custom;
         
-        Object.keys(dict.locs).forEach((key, index) => {
-            const locIds = ["tlv", "hai", "eil", "riy", "dub", "cyp", "ath", "rom", "vie", "add", "cap", "ny", "la", "ba", "mc"];
-            document.getElementById('loc-' + locIds[index]).innerText = dict.locs[key];
+        // יצירה דינמית של רשימת הערים ומיון
+        const sel = document.getElementById('location');
+        const currentVal = sel.value || 'telaviv';
+        sel.innerHTML = '';
+        
+        const grouped = {};
+        for (const [key, data] of Object.entries(citiesData)) {
+            const cCode = data.country;
+            if (!grouped[cCode]) grouped[cCode] = [];
+            grouped[cCode].push({ key: key, name: data.names[currentLang] });
+        }
+        
+        // מיון מדינות A-Z
+        const sortedCountries = Object.keys(grouped).sort((a, b) => {
+            return countriesData[a][currentLang].localeCompare(countriesData[b][currentLang], currentLang);
         });
+        
+        for (const cCode of sortedCountries) {
+            const optGroup = document.createElement('optgroup');
+            optGroup.label = countriesData[cCode][currentLang];
+            
+            // מיון ערים בתוך המדינה A-Z
+            grouped[cCode].sort((a, b) => a.name.localeCompare(b.name, currentLang));
+            
+            for (const city of grouped[cCode]) {
+                const opt = document.createElement('option');
+                opt.value = city.key;
+                opt.innerText = city.name;
+                optGroup.appendChild(opt);
+            }
+            sel.appendChild(optGroup);
+        }
+
+        const customOpt = document.createElement('option');
+        customOpt.value = 'custom';
+        customOpt.id = 'loc-custom';
+        customOpt.innerText = dict.custom;
+        const appContainer = document.getElementById('app-container');
+        customOpt.style.display = (appContainer && appContainer.classList.contains('map-mode')) ? 'block' : 'none';
+        sel.appendChild(customOpt);
+
+        if (citiesData[currentVal] || currentVal === 'custom') {
+            sel.value = currentVal;
+        } else {
+            sel.value = 'telaviv';
+        }
+
         if (document.getElementById('result').style.display === 'block') document.getElementById('btn-calc').click();
     }
 
@@ -374,8 +450,8 @@
         if (val === 'custom') {
             currentLoc = { ...locations.custom };
         } else {
-            currentLoc = { ...locations[val] };
-            locations.custom = { ...locations[val] }; // Update fallback
+            currentLoc = { ...citiesData[val] };
+            locations.custom = { ...citiesData[val] };
         }
         updateTzInfo();
         if(mapInstance && marker) {
@@ -391,14 +467,14 @@
         
         if (showMap) {
             container.classList.add('map-mode');
-            customOpt.style.display = 'block';
+            if (customOpt) customOpt.style.display = 'block';
             sel.value = 'custom';
             if (!mapLoaded) loadMapScripts();
             else setTimeout(() => mapInstance.invalidateSize(), 100);
         } else {
             container.classList.remove('map-mode');
             if (sel.value !== 'custom') {
-                customOpt.style.display = 'none';
+                if (customOpt) customOpt.style.display = 'none';
             }
         }
     }
@@ -579,7 +655,7 @@
         document.getElementById('result').style.display = 'block';
     }
 
-    window.onload = () => { handleListSelection(); setNow(); changeLanguage(); };
+    window.onload = () => { changeLanguage(); setNow(); handleListSelection(); };
 </script>
 </body>
 </html>
