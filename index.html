@@ -12,6 +12,9 @@
     <meta property="og:url" content="https://yonigr94.github.io/moon_loc_calc/">
     <meta property="og:type" content="website">
     
+    <!-- Chart.js for Lazy Loaded Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --royal-blue: #0A1B3F;
@@ -144,8 +147,20 @@
         .moon-visual { margin: 6px 0; display: flex; justify-content: center; }
         #moon-svg { filter: drop-shadow(0 0 6px rgba(255, 225, 53, 0.3)); transition: transform 0.3s; }
 
-        .rise-set-row { display: flex; justify-content: space-around; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 10px; font-size: 14px; }
-        .rise-set-row span { color: var(--banana-yellow); font-weight: bold; }
+        .rise-set-row { display: flex; justify-content: space-around; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 10px; font-size: 14px; text-align: center; }
+        .rise-set-row span.lbl { color: var(--banana-yellow); font-weight: bold; display: block; margin-bottom: 2px; }
+
+        /* Styles for Charts */
+        .charts-toggle {
+            text-align: center; margin-top: 15px; padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05); border-radius: 8px;
+            cursor: pointer; color: var(--banana-yellow); font-weight: bold;
+            transition: background 0.3s; border: 1px solid rgba(255, 225, 53, 0.2);
+            font-size: 14px;
+        }
+        .charts-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
+        #charts-container { display: none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        .chart-wrapper { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
 
         .credit-footer { margin-top: 15px; text-align: center; font-size: 13px; opacity: 0.7; color: var(--white); }
         .credit-footer a { color: var(--banana-light); text-decoration: none; }
@@ -204,7 +219,6 @@
             <div class="form-group">
                 <label id="lbl-location" for="location">מיקום:</label>
                 <select id="location" class="main-select" onchange="handleListSelection()">
-                    <!-- רשימת הערים תאוכלס דינמית על ידי ה-JS -->
                 </select>
                 <div id="tz-info" class="timezone-info"></div>
                 <a id="btn-open-map" class="switch-mode-link" onclick="toggleMapMode(true)">בחר עיר אחרת (מפה)</a>
@@ -245,8 +259,15 @@
             </div>
 
             <div class="rise-set-row">
-                <div id="box-rise"><span id="lbl-rise">זריחה</span> <span id="res-rise"></span></div>
-                <div id="box-set"><span id="lbl-set">שקיעה</span> <span id="res-set"></span></div>
+                <div id="box-rise"><span class="lbl" id="lbl-rise">זריחה</span> <div id="res-rise"></div></div>
+                <div id="box-set"><span class="lbl" id="lbl-set">שקיעה</span> <div id="res-set"></div></div>
+            </div>
+
+            <!-- לחצן ואזור הגרפים -->
+            <div class="charts-toggle" id="btn-toggle-charts" onclick="toggleCharts()">הצג גרפים יומיים ⬇️</div>
+            <div id="charts-container">
+                <div class="chart-wrapper"><canvas id="altChart"></canvas></div>
+                <div class="chart-wrapper" style="margin-top:10px;"><canvas id="azChart"></canvas></div>
             </div>
         </div>
 
@@ -337,6 +358,12 @@
     let mapLoaded = false;
     let mapInstance = null;
     let marker = null;
+    
+    // Charts variables
+    let chartsVisible = false;
+    let altChartInstance = null;
+    let azChartInstance = null;
+    let currentCalcStartMs = null; 
 
     const i18n = {
         he: {
@@ -345,7 +372,9 @@
             moonUp: "הירח מעל האופק", moonDown: "הירח מתחת לאופק", dirRtl: "rtl", phaseLbl: "מצב הירח",
             openMap: "בחר עיר אחרת (מפה)", closeMap: "חזרה לרשימה", elevation: "גובה מעל פני הים (מטרים):", custom: "מיקום מותאם אישית (מפה)",
             compass: ["צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב"],
-            phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" }
+            phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" },
+            showCharts: "הצג גרפים יומיים ⬇️", hideCharts: "הסתר גרפים יומיים ⬆️",
+            altChartTitle: "גובה הירח לפי שעה (מעלות)", azChartTitle: "אזימוט הירח במצפן (צהוב = מעל האופק)", azLabel: "אז':"
         },
         en: {
             title: "Moon Position", date: "Date:", time: "Time:", now: "Now", location: "Location:",
@@ -353,7 +382,9 @@
             moonUp: "Moon is above horizon", moonDown: "Moon is below horizon", dirRtl: "ltr", phaseLbl: "Moon Phase",
             openMap: "Choose another city (Map)", closeMap: "Back to list", elevation: "Elevation above sea level (m):", custom: "Custom location (Map)",
             compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-            phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" }
+            phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" },
+            showCharts: "Show Daily Charts ⬇️", hideCharts: "Hide Daily Charts ⬆️",
+            altChartTitle: "Hourly Moon Altitude (Degrees)", azChartTitle: "Moon Azimuth Path (Yellow = Above Horizon)", azLabel: "Az:"
         },
         ar: {
             title: "موقع القمر", date: "التاريخ:", time: "الوقت:", now: "الآن", location: "الموقع:",
@@ -361,7 +392,9 @@
             moonUp: "القمر فوق الأفق", moonDown: "القمر تحت الأفق", dirRtl: "rtl", phaseLbl: "طور القمر",
             openMap: "اختر مدينة أخرى (خريطة)", closeMap: "العودة للقائمة", elevation: "الارتفاع عن مستوى سطح البحر (م):", custom: "موقع مخصص (خريطة)",
             compass: ["شمال", "شمال شرقي", "شرق", "جنوب شرقي", "جنوب", "جنوب غربي", "غرب", "شمال غربي"],
-            phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" }
+            phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" },
+            showCharts: "عرض الرسوم البيانية ⬇️", hideCharts: "إخفاء الرسوم البيانية ⬆️",
+            altChartTitle: "ارتفاع القمر (درجات)", azChartTitle: "مسار السمت على البوصلة", azLabel: "السمت:"
         }
     };
 
@@ -388,6 +421,8 @@
         document.getElementById('btn-close-map').innerText = dict.closeMap;
         document.getElementById('lbl-elevation').innerText = dict.elevation;
         
+        document.getElementById('btn-toggle-charts').innerText = chartsVisible ? dict.hideCharts : dict.showCharts;
+
         // יצירה דינמית של רשימת הערים ומיון
         const sel = document.getElementById('location');
         const currentVal = sel.value || 'telaviv';
@@ -435,7 +470,12 @@
             sel.value = 'telaviv';
         }
 
-        if (document.getElementById('result').style.display === 'block') document.getElementById('btn-calc').click();
+        if (document.getElementById('result').style.display === 'block') {
+            document.getElementById('btn-calc').click();
+        }
+        if (chartsVisible && currentCalcStartMs) {
+            drawCharts();
+        }
     }
 
     function updateTzInfo() {
@@ -622,6 +662,166 @@
         document.getElementById('time').value = `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
     }
 
+    // --- Charts ---
+    function toggleCharts() {
+        const container = document.getElementById('charts-container');
+        const btn = document.getElementById('btn-toggle-charts');
+        const dict = i18n[currentLang];
+        
+        chartsVisible = !chartsVisible;
+        
+        if (chartsVisible) {
+            container.style.display = 'block';
+            btn.innerText = dict.hideCharts;
+            drawCharts(); // Calculate only when opened
+        } else {
+            container.style.display = 'none';
+            btn.innerText = dict.showCharts;
+        }
+    }
+
+    function drawCharts() {
+        if (!currentCalcStartMs || !window.Chart) return;
+        
+        const labels = [];
+        const altData = [];
+        const azData = [];
+        
+        // 48 steps (every 30 mins)
+        for(let i=0; i<48; i++) {
+            const t = currentCalcStartMs + (i * 30 * 60000);
+            const timeStr = new Intl.DateTimeFormat('he-IL', { timeZone: currentLoc.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t));
+            labels.push(timeStr);
+            
+            const pos = getMoonPosition(t, currentLoc.lat, currentLoc.lng);
+            altData.push(pos.altitude);
+            
+            // Azimuth representation for Compass (Scatter)
+            // azimuth 0 = North (Up: Y=1, X=0)
+            // azimuth 90 = East (Right: Y=0, X=1)
+            const azRad = pos.azimuth * (Math.PI / 180);
+            azData.push({
+                x: Math.sin(azRad),
+                y: Math.cos(azRad), // In ChartJS scatter, positive Y is Up!
+                time: timeStr,
+                azValue: pos.azimuth.toFixed(1),
+                altValue: pos.altitude.toFixed(1)
+            });
+        }
+        
+        const dict = i18n[currentLang];
+        
+        // --- Line chart for Altitude ---
+        if (altChartInstance) altChartInstance.destroy();
+        const ctxAlt = document.getElementById('altChart').getContext('2d');
+        altChartInstance = new Chart(ctxAlt, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: dict.altChartTitle,
+                    data: altData,
+                    borderColor: '#FFE135',
+                    backgroundColor: 'rgba(255, 225, 53, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#A0ABC0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { 
+                        min: -90, max: 90, 
+                        ticks: { color: '#A0ABC0' }, 
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#FFF' } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(1)}°` } }
+                }
+            }
+        });
+        
+        // --- Circular Scatter Chart for Azimuth ---
+        if (azChartInstance) azChartInstance.destroy();
+        const ctxAz = document.getElementById('azChart').getContext('2d');
+        
+        // Compass plugin
+        const compassPlugin = {
+            id: 'compassBackground',
+            beforeDraw: (chart) => {
+                const ctx = chart.ctx;
+                const { left, top, width, height } = chart.chartArea;
+                const centerX = left + width / 2;
+                const centerY = top + height / 2;
+                const radius = Math.min(width, height) / 2 * 0.75;
+                
+                ctx.save();
+                ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.lineWidth = 1; ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY - radius); ctx.lineTo(centerX, centerY + radius);
+                ctx.moveTo(centerX - radius, centerY); ctx.lineTo(centerX + radius, centerY);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#A0ABC0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '12px sans-serif';
+                const cDict = i18n[currentLang].compass;
+                ctx.fillText(cDict[0], centerX, centerY - radius - 15); // North
+                ctx.fillText(cDict[4], centerX, centerY + radius + 15); // South
+                ctx.fillText(cDict[2], centerX + radius + 15, centerY); // East
+                ctx.fillText(cDict[6], centerX - radius - 15, centerY); // West
+                ctx.restore();
+            }
+        };
+
+        azChartInstance = new Chart(ctxAz, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: dict.azChartTitle,
+                    data: azData,
+                    showLine: true,
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    borderWidth: 1.5,
+                    backgroundColor: (ctx) => {
+                        const item = ctx.raw;
+                        return item && parseFloat(item.altValue) > 0 ? '#FFE135' : '#A0ABC0';
+                    },
+                    pointBorderColor: '#0A1B3F',
+                    pointRadius: 4,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: -1.2, max: 1.2, display: false },
+                    y: { min: -1.2, max: 1.2, display: false }
+                },
+                plugins: {
+                    legend: { labels: { color: '#FFF' } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const d = ctx.raw;
+                                return `${d.time} | ${dict.azLabel} ${d.azValue}° | ${dict.alt}: ${d.altValue}°`;
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [compassPlugin]
+        });
+    }
+
     function calculateMoon(e) {
         e.preventDefault();
         const dIn = document.getElementById('date').value, tIn = document.getElementById('time').value;
@@ -630,6 +830,8 @@
         const nextD = new Date(Date.UTC(...dIn.split('-').map((v,i)=>i===1?v-1:i===2?Number(v)+1:v))).toISOString().slice(0, 10);
         const endMs = localDateTimeToUtcMs(nextD, '00:00', currentLoc.timeZone);
         const elevation = parseFloat(document.getElementById('elevation').value) || 0;
+
+        currentCalcStartMs = startMs; // שמירה לטובת הגרפים
 
         const pos = getMoonPosition(targetMs, currentLoc.lat, currentLoc.lng);
         const times = getMoonRiseSet(startMs, endMs, currentLoc.lat, currentLoc.lng, elevation);
@@ -644,15 +846,24 @@
         stat.innerText = pos.altitude > 0 ? dict.moonUp : dict.moonDown;
         stat.className = pos.altitude > 0 ? "horizon-status status-up" : "horizon-status status-down";
 
-        const fmt = (t) => new Intl.DateTimeFormat('he-IL', { timeZone: currentLoc.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t));
-        document.getElementById('res-rise').innerText = times.rises.length ? times.rises.map(fmt).join(', ') : dict.noneToday;
-        document.getElementById('res-set').innerText = times.sets.length ? times.sets.map(fmt).join(', ') : dict.noneToday;
+        // פונקציית העיצוב החדשה לזריחה/שקיעה שכוללת גם את חילוץ האזימוט
+        const fmtEvent = (t) => {
+            const timeStr = new Intl.DateTimeFormat('he-IL', { timeZone: currentLoc.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t));
+            const az = getMoonPosition(t, currentLoc.lat, currentLoc.lng).azimuth.toFixed(1);
+            return `<div style="margin-bottom:4px;">${timeStr} <div style="font-size:11px; font-weight:normal; color:var(--grey-light);">(${dict.azLabel} ${az}°)</div></div>`;
+        };
+
+        document.getElementById('res-rise').innerHTML = times.rises.length ? times.rises.map(fmtEvent).join('') : dict.noneToday;
+        document.getElementById('res-set').innerHTML = times.sets.length ? times.sets.map(fmtEvent).join('') : dict.noneToday;
         
         const [r1, s1] = [times.rises[0]||Infinity, times.sets[0]||Infinity];
         document.getElementById('box-rise').style.order = r1 < s1 ? 1 : 2;
         document.getElementById('box-set').style.order = s1 < r1 ? 1 : 2;
         
         document.getElementById('result').style.display = 'block';
+
+        // אם תצוגת הגרפים פתוחה, רענן אותם עם התאריך החדש
+        if (chartsVisible) drawCharts();
     }
 
     window.onload = () => { changeLanguage(); setNow(); handleListSelection(); };
