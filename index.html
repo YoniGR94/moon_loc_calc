@@ -161,6 +161,7 @@
         .charts-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
         #charts-container { display: none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
         .chart-wrapper { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
+        .square-wrapper { height: auto; aspect-ratio: 1; max-height: 380px; margin: 0 auto; }
 
         .credit-footer { margin-top: 15px; text-align: center; font-size: 13px; opacity: 0.7; color: var(--white); }
         .credit-footer a { color: var(--banana-light); text-decoration: none; }
@@ -267,7 +268,7 @@
             <div class="charts-toggle" id="btn-toggle-charts" onclick="toggleCharts()">הצג גרפים יומיים ⬇️</div>
             <div id="charts-container">
                 <div class="chart-wrapper"><canvas id="altChart"></canvas></div>
-                <div class="chart-wrapper" style="margin-top:10px;"><canvas id="azChart"></canvas></div>
+                <div class="chart-wrapper square-wrapper"><canvas id="azChart"></canvas></div>
             </div>
         </div>
 
@@ -374,7 +375,8 @@
             compass: ["צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב"],
             phases: { new: "מולד הירח", waxCres: "סהר מתמלא", firstQuar: "רבע ראשון", waxGib: "ירח מתמלא", full: "ירח מלא", wanGib: "ירח מתמעט", lastQuar: "רבע אחרון", wanCres: "סהר מתמעט" },
             showCharts: "הצג גרפים יומיים ⬇️", hideCharts: "הסתר גרפים יומיים ⬆️",
-            altChartTitle: "גובה הירח לפי שעה (מעלות)", azChartTitle: "אזימוט הירח במצפן (צהוב = מעל האופק)", azLabel: "אז':"
+            altChartTitle: "גובה הירח לאורך היממה (מעלות)", azChartTitle: "מסלול הירח על פני כיפת השמיים", 
+            azChartSub: "(מרכז = זניט מעלינו, קו מקווקו = אופק)", azLabel: "אז':", startStr: "התחלה", endStr: "סיום"
         },
         en: {
             title: "Moon Position", date: "Date:", time: "Time:", now: "Now", location: "Location:",
@@ -384,7 +386,8 @@
             compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
             phases: { new: "New Moon", waxCres: "Waxing Crescent", firstQuar: "First Quarter", waxGib: "Waxing Gibbous", full: "Full Moon", wanGib: "Waning Gibbous", lastQuar: "Last Quarter", wanCres: "Waning Crescent" },
             showCharts: "Show Daily Charts ⬇️", hideCharts: "Hide Daily Charts ⬆️",
-            altChartTitle: "Hourly Moon Altitude (Degrees)", azChartTitle: "Moon Azimuth Path (Yellow = Above Horizon)", azLabel: "Az:"
+            altChartTitle: "Moon Altitude over 24h (Degrees)", azChartTitle: "Moon Path in the Sky Map", 
+            azChartSub: "(Center = Zenith, Dashed Circle = Horizon)", azLabel: "Az:", startStr: "Start", endStr: "End"
         },
         ar: {
             title: "موقع القمر", date: "التاريخ:", time: "الوقت:", now: "الآن", location: "الموقع:",
@@ -394,7 +397,8 @@
             compass: ["شمال", "شمال شرقي", "شرق", "جنوب شرقي", "جنوب", "جنوب غربي", "غرب", "شمال غربي"],
             phases: { new: "محاق", waxCres: "هلال متزايد", firstQuar: "تربيع أول", waxGib: "أحدب متزايد", full: "بدر", wanGib: "أحدب متناقص", lastQuar: "تربيع أخير", wanCres: "هلال متناقص" },
             showCharts: "عرض الرسوم البيانية ⬇️", hideCharts: "إخفاء الرسوم البيانية ⬆️",
-            altChartTitle: "ارتفاع القمر (درجات)", azChartTitle: "مسار السمت على البوصلة", azLabel: "السمت:"
+            altChartTitle: "ارتفاع القمر على مدار 24 ساعة (درجات)", azChartTitle: "مسار القمر في قبة السماء", 
+            azChartSub: "(المركز = سمت الرأس، الدائرة المتقطعة = الأفق)", azLabel: "السمت:", startStr: "بداية", endStr: "نهاية"
         }
     };
 
@@ -696,13 +700,15 @@
             const pos = getMoonPosition(t, currentLoc.lat, currentLoc.lng);
             altData.push(pos.altitude);
             
-            // Azimuth representation for Compass (Scatter)
-            // azimuth 0 = North (Up: Y=1, X=0)
-            // azimuth 90 = East (Right: Y=0, X=1)
+            // Sky Map representation
+            // Center is Zenith (Altitude 90). Radius 1 is Horizon (Altitude 0).
+            // This means Distance from Center = (90 - Altitude) / 90
             const azRad = pos.azimuth * (Math.PI / 180);
+            const r = (90 - pos.altitude) / 90;
+            
             azData.push({
-                x: Math.sin(azRad),
-                y: Math.cos(azRad), // In ChartJS scatter, positive Y is Up!
+                x: r * Math.sin(azRad),
+                y: r * Math.cos(azRad), // positive Y goes up in Chart.js default scale
                 time: timeStr,
                 azValue: pos.azimuth.toFixed(1),
                 altValue: pos.altitude.toFixed(1)
@@ -719,7 +725,6 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    label: dict.altChartTitle,
                     data: altData,
                     borderColor: '#FFE135',
                     backgroundColor: 'rgba(255, 225, 53, 0.1)',
@@ -742,41 +747,67 @@
                     }
                 },
                 plugins: {
-                    legend: { labels: { color: '#FFF' } },
+                    legend: { display: false },
+                    title: { display: true, text: dict.altChartTitle, color: '#FFF', font: { size: 15 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(1)}°` } }
                 }
             }
         });
         
-        // --- Circular Scatter Chart for Azimuth ---
+        // --- Circular Scatter Chart for Azimuth/Sky Map ---
         if (azChartInstance) azChartInstance.destroy();
         const ctxAz = document.getElementById('azChart').getContext('2d');
         
-        // Compass plugin
-        const compassPlugin = {
-            id: 'compassBackground',
+        const skyMapPlugin = {
+            id: 'skyMapBackground',
             beforeDraw: (chart) => {
                 const ctx = chart.ctx;
-                const { left, top, width, height } = chart.chartArea;
-                const centerX = left + width / 2;
-                const centerY = top + height / 2;
-                const radius = Math.min(width, height) / 2 * 0.75;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+                
+                const centerX = xAxis.getPixelForValue(0);
+                const centerY = yAxis.getPixelForValue(0);
+                
+                // radius 1 is the horizon (alt = 0)
+                const horizonRadius = Math.abs(xAxis.getPixelForValue(1) - centerX);
                 
                 ctx.save();
-                ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.lineWidth = 1; ctx.stroke();
+                // Draw Horizon Circle
+                ctx.beginPath(); ctx.arc(centerX, centerY, horizonRadius, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.stroke();
+                ctx.setLineDash([]);
                 
+                // Draw Crosshairs
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY - radius); ctx.lineTo(centerX, centerY + radius);
-                ctx.moveTo(centerX - radius, centerY); ctx.lineTo(centerX + radius, centerY);
-                ctx.stroke();
+                ctx.moveTo(centerX, yAxis.getPixelForValue(2.2)); ctx.lineTo(centerX, yAxis.getPixelForValue(-2.2));
+                ctx.moveTo(xAxis.getPixelForValue(-2.2), centerY); ctx.lineTo(xAxis.getPixelForValue(2.2), centerY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke();
                 
+                // Directions
                 ctx.fillStyle = '#A0ABC0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '12px sans-serif';
-                const cDict = i18n[currentLang].compass;
-                ctx.fillText(cDict[0], centerX, centerY - radius - 15); // North
-                ctx.fillText(cDict[4], centerX, centerY + radius + 15); // South
-                ctx.fillText(cDict[2], centerX + radius + 15, centerY); // East
-                ctx.fillText(cDict[6], centerX - radius - 15, centerY); // West
+                const cDict = dict.compass;
+                ctx.fillText(cDict[0], centerX, yAxis.getPixelForValue(1) - 15); // North
+                ctx.fillText(cDict[4], centerX, yAxis.getPixelForValue(-1) + 15); // South
+                ctx.fillText(cDict[2], xAxis.getPixelForValue(1) + 15, centerY); // East
+                ctx.fillText(cDict[6], xAxis.getPixelForValue(-1) - 15, centerY); // West
+                ctx.restore();
+            },
+            afterDraw: (chart) => {
+                const ctx = chart.ctx;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data || meta.data.length === 0) return;
+                
+                const firstPoint = meta.data[0];
+                const lastPoint = meta.data[meta.data.length - 1];
+                
+                ctx.save();
+                ctx.fillStyle = '#FFF';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                
+                // Start and End labels
+                ctx.fillText(`00:00 (${dict.startStr})`, firstPoint.x, firstPoint.y - 12);
+                ctx.fillText(`23:30 (${dict.endStr})`, lastPoint.x, lastPoint.y + 15);
                 ctx.restore();
             }
         };
@@ -785,7 +816,6 @@
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: dict.azChartTitle,
                     data: azData,
                     showLine: true,
                     borderColor: 'rgba(255,255,255,0.3)',
@@ -801,13 +831,21 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true, // Allows square aspect ratio
                 scales: {
-                    x: { min: -1.2, max: 1.2, display: false },
-                    y: { min: -1.2, max: 1.2, display: false }
+                    // Maximum scale set to 2.2 to allow points to go below horizon safely
+                    x: { min: -2.2, max: 2.2, display: false },
+                    y: { min: -2.2, max: 2.2, display: false }
                 },
                 plugins: {
-                    legend: { labels: { color: '#FFF' } },
+                    legend: { display: false },
+                    title: { 
+                        display: true, 
+                        text: [dict.azChartTitle, dict.azChartSub], 
+                        color: '#FFF', 
+                        font: { size: 14, weight: 'normal' },
+                        padding: { bottom: 15 }
+                    },
                     tooltip: {
                         callbacks: {
                             label: (ctx) => {
@@ -818,7 +856,7 @@
                     }
                 }
             },
-            plugins: [compassPlugin]
+            plugins: [skyMapPlugin]
         });
     }
 
@@ -846,7 +884,7 @@
         stat.innerText = pos.altitude > 0 ? dict.moonUp : dict.moonDown;
         stat.className = pos.altitude > 0 ? "horizon-status status-up" : "horizon-status status-down";
 
-        // פונקציית העיצוב החדשה לזריחה/שקיעה שכוללת גם את חילוץ האזימוט
+        // פונקציית העיצוב לזריחה/שקיעה שכוללת את חילוץ האזימוט
         const fmtEvent = (t) => {
             const timeStr = new Intl.DateTimeFormat('he-IL', { timeZone: currentLoc.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t));
             const az = getMoonPosition(t, currentLoc.lat, currentLoc.lng).azimuth.toFixed(1);
